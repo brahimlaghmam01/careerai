@@ -3,6 +3,7 @@ import { Sparkles, FileText, Save, Wand2 } from "lucide-react";
 import { Glass, PrimaryBtn, OutlineBtn } from "../components/UI";
 import api from "../lib/api";
 import { useLocation } from "react-router-dom";
+import TemplateCVPreview from "../components/TemplateCVPreview";
 
 const TEMPLATES = [
   "Modern",
@@ -136,25 +137,35 @@ export default function CVBuilderPage() {
         data: payload,
       });
 
-      // Backend returns: { response: "{...}" }
-      // but it can fail and return validation/500 errors. Guard against
-      // missing/invalid JSON to avoid the generic "Failed to generate CV".
+      // Backend returns the AI request model; response is inside res.data.response
       const raw = res.data?.response;
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
 
       if (!parsed || typeof parsed !== "object") {
+        console.error("Bad AI payload:", parsed, "raw:", raw, "res:", res.data);
         throw new Error("AI response is empty or not a JSON object");
       }
 
       setResult(parsed);
       setGenerationCount((c) => c + 1);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to generate CV. Please try again.");
+    } catch (err: any) {
+      console.error("Failed to generate CV:", err);
+      // Show backend validation errors if present
+      const dataMsg = err?.response?.data?.message;
+      const rawData = err?.response?.data;
+
+      let detail = "Failed to generate CV";
+      if (typeof dataMsg === "string" && dataMsg.trim()) detail = dataMsg;
+      else if (typeof rawData?.message === "string" && rawData.message.trim()) detail = rawData.message;
+      else if (typeof rawData === "string" && rawData.trim()) detail = rawData;
+
+      alert(String(detail) + ". Please try again.");
+
     } finally {
       setLoading(false);
     }
   };
+
 
   const saveCV = async () => {
     try {
@@ -204,8 +215,7 @@ export default function CVBuilderPage() {
   const canGoPrev = activeStep > 0;
   const goPrev = () => canGoPrev && setActiveStep((s) => Math.max(0, s - 1));
   const goNext = () =>
-    canGoNext &&
-    setActiveStep((s) => Math.min(steps.length - 1, s + 1));
+    canGoNext && setActiveStep((s) => Math.min(steps.length - 1, s + 1));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -343,7 +353,10 @@ export default function CVBuilderPage() {
                     {formData.experience.length ? (
                       <div className="space-y-4">
                         {formData.experience.map((item, idx) => (
-                          <div key={idx} className="p-4 rounded-[12px] border border-slate-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/20">
+                          <div
+                            key={idx}
+                            className="p-4 rounded-[12px] border border-slate-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/20"
+                          >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Role</label>
@@ -496,7 +509,10 @@ export default function CVBuilderPage() {
                     {formData.education.length ? (
                       <div className="space-y-4">
                         {formData.education.map((item, idx) => (
-                          <div key={idx} className="p-4 rounded-[12px] border border-slate-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/20">
+                          <div
+                            key={idx}
+                            className="p-4 rounded-[12px] border border-slate-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/20"
+                          >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">School</label>
@@ -623,10 +639,7 @@ export default function CVBuilderPage() {
                         onClick={() =>
                           setFormData((prev) => ({
                             ...prev,
-                            projects: [
-                              ...prev.projects,
-                              { projectName: "", status: "prototype", description: "" },
-                            ],
+                            projects: [...prev.projects, { projectName: "", status: "prototype", description: "" }],
                           }))
                         }
                         className="text-xs font-semibold text-blue-600 hover:text-blue-700"
@@ -638,7 +651,10 @@ export default function CVBuilderPage() {
                     {formData.projects.length ? (
                       <div className="space-y-4">
                         {formData.projects.map((item, idx) => (
-                          <div key={idx} className="p-4 rounded-[12px] border border-slate-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/20">
+                          <div
+                            key={idx}
+                            className="p-4 rounded-[12px] border border-slate-200 dark:border-slate-700/60 bg-white/40 dark:bg-slate-800/20"
+                          >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                               <div>
                                 <label className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Project Name</label>
@@ -780,13 +796,6 @@ export default function CVBuilderPage() {
                   </button>
                 </div>
               ) : null}
-
-              {activeStep !== 4 ? null : null}
-
-              {/* Generate button is shown in Step 4 to avoid premature submit */}
-              {activeStep === 0 || activeStep === 1 || activeStep === 2 || activeStep === 3 ? (
-                <div className="hidden" />
-              ) : null}
             </div>
           </Glass>
         </div>
@@ -799,31 +808,45 @@ export default function CVBuilderPage() {
                 <Sparkles className="text-violet-500" size={20} />
                 AI Preview
               </h2>
-              {result && (
+              {result ? (
                 <OutlineBtn onClick={saveCV} className="py-2 px-4 text-xs h-auto">
                   <Save size={14} /> Save to Dashboard
                 </OutlineBtn>
-              )}
+              ) : null}
             </div>
 
-            {result ? (
-              <div className="flex-1 overflow-y-auto space-y-6">
-                <div className="text-center pb-6 border-b border-slate-100 dark:border-slate-800/60">
-                  <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white mb-2">{result.fullName}</h1>
-                  <p className="text-[#2563EB] font-medium">{formData.targetJob}</p>
+            <div className="flex-1 overflow-y-auto space-y-6">
+              <TemplateCVPreview
+                data={{
+                  template: formData.template,
+                  fullName: (result?.fullName as string) || formData.fullName,
+                  targetJob: formData.targetJob,
+                  email: formData.email,
+                  phone: formData.phone,
+                  location: formData.location,
+                  linkedin: formData.linkedin,
+                  website: formData.website,
+                  summary: result?.summary || formData.achievements || undefined,
+                  skills: formData.skills,
+                  coreSkills:
+                    Array.isArray(result?.coreSkills)
+                      ? result.coreSkills
+                      : typeof result?.skills === "string"
+                        ? String(result.skills)
+                            .replace("Optimized Skills: ", "")
+                            .split(",")
+                            .map((s: string) => s.trim())
+                            .filter(Boolean)
+                        : undefined,
+                  achievements: result?.achievements || formData.achievements,
+                  experience: formData.experience,
+                  education: formData.education,
+                  projects: formData.projects,
+                  certifications: result?.certifications || formData.certifications,
+                }}
+              />
 
-                  <div className="mt-2 inline-flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    Generated preview updated ({generationCount || 0})
-                  </div>
-
-                  {parsedContactPreview ? (
-                    <div className="mt-3 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                      {parsedContactPreview}
-                    </div>
-                  ) : null}
-                </div>
-
+              {result?.ats_score || result?.ats_reasons?.length ? (
                 <div className="flex items-center gap-3">
                   {typeof result?.ats_score === "number" ? (
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-100 dark:border-violet-500/20">
@@ -835,82 +858,16 @@ export default function CVBuilderPage() {
                     <div className="text-xs text-slate-500 dark:text-slate-400">{result.ats_reasons[0]}</div>
                   ) : null}
                 </div>
+              ) : null}
 
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Professional Summary</h3>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/50 dark:bg-blue-500/5 p-4 rounded-xl border border-blue-100 dark:border-blue-500/10">
-                    {result.summary}
-                  </p>
+              {!result ? (
+                <div className="text-xs text-slate-500 dark:text-slate-400">
+                  Fill out the details: preview updates in realtime with your selected template.
                 </div>
-
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Core Skills</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {(result.coreSkills || [])?.length
-                      ? result.coreSkills.map((s: string, i: number) => (
-                          <span
-                            key={i}
-                            className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium"
-                          >
-                            {s}
-                          </span>
-                        ))
-                      : String(result.skills || "")
-                          .replace("Optimized Skills: ", "")
-                          .split(",")
-                          .map((s: string, i: number) => (
-                            <span
-                              key={i}
-                              className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium"
-                            >
-                              {s.trim()}
-                            </span>
-                          ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Experience</h3>
-                  <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{result.experience}</div>
-                </div>
-
-                {result.projects?.length ? (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Projects</h3>
-                    <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                      {result.projects.join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-
-                {result.achievements ? (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Top Achievements</h3>
-                    <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{result.achievements}</div>
-                  </div>
-                ) : null}
-
-                {result.education ? (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Education</h3>
-                    <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{result.education}</div>
-                  </div>
-                ) : null}
-
-                {result.certifications ? (
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-3">Certifications</h3>
-                    <div className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{result.certifications}</div>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                <FileText size={48} className="mb-4 text-slate-300 dark:text-slate-700" />
-                <p>Fill out the details and click generate</p>
-                <p className="text-xs mt-1">Our AI will optimize it for ATS tracking.</p>
-              </div>
-            )}
+              ) : parsedContactPreview ? (
+                <div className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{parsedContactPreview}</div>
+              ) : null}
+            </div>
           </Glass>
         </div>
       </div>
