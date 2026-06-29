@@ -136,7 +136,16 @@ export default function CVBuilderPage() {
         data: payload,
       });
 
-      const parsed = JSON.parse(res.data.response);
+      // Backend returns: { response: "{...}" }
+      // but it can fail and return validation/500 errors. Guard against
+      // missing/invalid JSON to avoid the generic "Failed to generate CV".
+      const raw = res.data?.response;
+      const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("AI response is empty or not a JSON object");
+      }
+
       setResult(parsed);
       setGenerationCount((c) => c + 1);
     } catch (err) {

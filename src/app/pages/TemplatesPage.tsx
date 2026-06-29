@@ -1,6 +1,7 @@
-import { useNavigate } from "react-router-dom";
-import { Layout, Check, FileText } from "lucide-react";
-import { Glass, PrimaryBtn, cn } from "../components/UI";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Layout, Check, FileText, Eye } from "lucide-react";
+import { Glass, PrimaryBtn, cn, OutlineBtn } from "../components/UI";
+
 
 const TEMPLATES = [
   { name: "Modern", desc: "Clean, single-column layout ideal for tech roles.", gradient: "from-[#2563EB] to-[#06B6D4]", tag: "Popular" },
@@ -9,10 +10,23 @@ const TEMPLATES = [
   { name: "Creative", desc: "Bold accents for design and marketing roles.", gradient: "from-[#EC4899] to-[#7C3AED]", tag: "New" },
   { name: "Executive", desc: "Refined layout for senior leadership positions.", gradient: "from-[#0F766E] to-[#0891B2]", tag: null },
   { name: "Academic", desc: "Structured format for research and academia.", gradient: "from-[#B45309] to-[#92400E]", tag: null },
+
+  { name: "Classic", desc: "Timeless resume layout with strong ATS compatibility.", gradient: "from-[#1D4ED8] to-[#4F46E5]", tag: null },
+  { name: "Skills First", desc: "Highlights your skills early for recruiters who scan fast.", gradient: "from-[#10B981] to-[#3B82F6]", tag: "Fast-Scan" },
+  { name: "Data Analyst", desc: "Optimized for analytics roles with clear metrics & impact sections.", gradient: "from-[#F59E0B] to-[#EF4444]", tag: null },
+  { name: "Frontend", desc: "Great for FE roles: clean typography and code-adjacent sections.", gradient: "from-[#7C3AED] to-[#2563EB]", tag: null },
+  { name: "Product", desc: "Product manager style: goals, outcomes, and cross-functional impact.", gradient: "from-[#06B6D4] to-[#8B5CF6]", tag: null },
+  { name: "Government", desc: "Structured, formal layout used for administrative applications.", gradient: "from-[#0F172A] to-[#475569]", tag: null },
 ];
 
 export default function TemplatesPage() {
+  // If redirect is provided, clicking a template returns to the redirect page
+  // with `template=<selected>` in query params.
+
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const redirectTo = searchParams.get("redirect") ?? null;
 
   return (
     <div className="p-5 md:p-6 max-w-5xl mx-auto space-y-5">
@@ -37,12 +51,34 @@ export default function TemplatesPage() {
             <div className="flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 mb-3">
               <Check size={12} /> ATS-optimized
             </div>
-            <PrimaryBtn
-              onClick={() => navigate(`/dashboard/cv?template=${encodeURIComponent(t.name)}`)}
-              className="w-full py-2.5 text-xs"
-            >
-              Use Template
-            </PrimaryBtn>
+            <div className="flex items-center gap-2">
+              <OutlineBtn
+                onClick={() => navigate(`/dashboard/template-preview?template=${encodeURIComponent(t.name)}`)}
+                className="flex-1 py-2.5 text-xs"
+              >
+                <Eye size={14} /> Preview
+              </OutlineBtn>
+
+              <PrimaryBtn
+                onClick={() => {
+                  if (redirectTo) {
+                    // Resume download flow: return to the original page with chosen template.
+                    navigate(
+                      `${redirectTo}${redirectTo.includes("?") ? "&" : "?"}template=${encodeURIComponent(
+                        t.name
+                      )}`
+                    );
+                    return;
+                  }
+
+                  // Default behavior: use template for CV builder.
+                  navigate(`/dashboard/cv?template=${encodeURIComponent(t.name)}`);
+                }}
+                className="flex-1 py-2.5 text-xs"
+              >
+                Use
+              </PrimaryBtn>
+            </div>
 
           </Glass>
         ))}

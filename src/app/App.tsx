@@ -17,6 +17,8 @@ import CoverLettersPage from "./pages/CoverLettersPage";
 import InterviewPrepPage from "./pages/InterviewPrepPage";
 import CareerAdvisorPage from "./pages/CareerAdvisorPage";
 import TemplatesPage from "./pages/TemplatesPage";
+import TemplatePreviewPage from "./pages/TemplatePreviewPage";
+import DownloadsPage from "./pages/DownloadsPage";
 import SettingsPage from "./pages/SettingsPage";
 
 
@@ -83,6 +85,8 @@ export default function App() {
             <Route path="interview" element={<InterviewPrepPage />} />
             <Route path="advisor" element={<CareerAdvisorPage />} />
             <Route path="templates" element={<TemplatesPage />} />
+            <Route path="template-preview" element={<TemplatePreviewPage />} />
+            <Route path="downloads" element={<DownloadsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
 
