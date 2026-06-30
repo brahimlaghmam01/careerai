@@ -34,15 +34,17 @@ export function Glass({ children, className = "", onClick }: { children: React.R
   );
 }
 
-export function PrimaryBtn({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void }) {
+export function PrimaryBtn({ children, className = "", onClick, disabled }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void; disabled?: boolean }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "bg-gradient-to-r from-[#2563EB] to-[#7C3AED]",
         "text-white font-semibold rounded-full px-6 py-3 text-sm",
         "hover:shadow-[0_8px_28px_rgba(37,99,235,0.38)] hover:-translate-y-0.5",
         "active:translate-y-0 transition-all duration-200 inline-flex items-center justify-center gap-2",
+        disabled && "opacity-50 cursor-not-allowed hover:shadow-none hover:translate-y-0",
         className
       )}
     >
@@ -101,7 +103,7 @@ export function Navbar({ darkMode, setDarkMode }: { darkMode: boolean; setDarkMo
 
   return (
     <nav className={cn("fixed top-0 left-0 right-0 z-50 transition-all duration-300", scrolled ? "py-2" : "py-4")}>
-        <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         <div className={cn(
           "flex items-center justify-between px-5 py-3 rounded-[20px] transition-all duration-300",
           scrolled
